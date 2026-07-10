@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Database, CheckCircle, AlertTriangle } from "lucide-react";
+import { Database, CheckCircle, AlertTriangle, Star, ShieldCheck } from "lucide-react";
 import ProgressStepper from "./ProgressStepper";
 import FiltersPanel from "./FiltersPanel";
 import RoomGrid from "./RoomGrid";
@@ -85,6 +85,30 @@ export default function BookingDashboard({ user }) {
       <ProgressStepper currentStep={2} />
 
       {showSeedPanel && <SeedDataPanel onClose={() => setShowSeedPanel(false)} />}
+
+      {student?.academicLevel === 400 && student?.isEligible && (
+        <div className="bg-secondary-container/20 border border-secondary-container/50 rounded p-4 flex items-center gap-3">
+          <Star className="h-5 w-5 text-secondary shrink-0 fill-current" />
+          <div>
+            <p className="font-title-md text-title-md text-secondary">Priority Access Active</p>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              As a 400-level student, you have early access to room selection. Choose your preferred room before general allocation opens.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {student?.academicLevel && student.academicLevel < 400 && student?.isEligible && (
+        <div className="bg-primary-fixed/20 border border-primary/20 rounded p-4 flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="font-title-md text-title-md text-primary">Standard Access</p>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              400-level students have early access priority. Rooms marked with a star are reserved for final-year students during the priority window.
+            </p>
+          </div>
+        </div>
+      )}
 
       {student && !student.isEligible && (
         <div className="bg-error-container border border-error-red/30 rounded p-4 flex items-center gap-3">

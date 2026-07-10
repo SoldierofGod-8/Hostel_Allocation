@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { auth, db } from "../../firebaseConfig";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { LogIn, UserPlus, ShieldCheck, Building2 } from "lucide-react";
+import { LogIn, UserPlus, ShieldCheck, Building2, GraduationCap, Hash } from "lucide-react";
+
+const LEVELS = [100, 200, 300, 400, 500];
 
 const DEMO_USERS = {
   male: {
     uid: "stud_alex_99",
     name: "Alex Ngozi",
     email: "alex.n@university.edu",
+    matric: "ADUN/2022/1234",
     role: "student",
     gender: "male",
     academicLevel: 400,
@@ -19,6 +22,7 @@ const DEMO_USERS = {
     uid: "stud_grace_88",
     name: "Grace Okonkwo",
     email: "grace.o@university.edu",
+    matric: "ADUN/2023/5678",
     role: "student",
     gender: "female",
     academicLevel: 300,
@@ -32,8 +36,9 @@ export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [matric, setMatric] = useState("");
   const [gender, setGender] = useState("male");
-  const [academicLevel, setAcademicLevel] = useState(100);
+  const [academicLevel, setAcademicLevel] = useState(400);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -63,7 +68,7 @@ export default function LoginPage({ onLogin }) {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "users", userCredential.user.uid), {
           uid: userCredential.user.uid,
-          name, email, role: "student", gender,
+          name, matric, email, role: "student", gender,
           academicLevel: parseInt(academicLevel),
           isEligible: true, currentAllocationId: null,
         });
@@ -71,7 +76,11 @@ export default function LoginPage({ onLogin }) {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
       }
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-      onLogin(userDoc.exists() ? userDoc.data() : { uid: userCredential.user.uid, name: email.split("@")[0], email, role: "student", gender: "male", academicLevel: 100, isEligible: true });
+      onLogin(userDoc.exists() ? userDoc.data() : {
+        uid: userCredential.user.uid, name: email.split("@")[0],
+        email, role: "student", gender: "male",
+        academicLevel: 100, isEligible: true,
+      });
     } catch (err) {
       setError(err.message.replace("Firebase: ", ""));
     } finally {
@@ -146,14 +155,43 @@ export default function LoginPage({ onLogin }) {
             <p className="text-center text-sm text-on-surface-variant mb-4 font-medium">Admin / Email Login</p>
             <form onSubmit={handleFirebaseAuth} className="space-y-3">
               {isSignUp && (
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Name"
-                  required
-                  className="w-full h-11 px-4 border border-border-neutral rounded bg-surface-bright focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md"
-                />
+                <>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Full Name"
+                    required
+                    className="w-full h-11 px-4 border border-border-neutral rounded bg-surface-bright focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md"
+                  />
+                  <input
+                    type="text"
+                    value={matric}
+                    onChange={(e) => setMatric(e.target.value)}
+                    placeholder="Matric Number (e.g. ADUN/2022/1234)"
+                    required
+                    className="w-full h-11 px-4 border border-border-neutral rounded bg-surface-bright focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full h-11 px-4 border border-border-neutral rounded bg-surface-bright focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <select
+                      value={academicLevel}
+                      onChange={(e) => setAcademicLevel(e.target.value)}
+                      className="w-full h-11 px-4 border border-border-neutral rounded bg-surface-bright focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md"
+                    >
+                      {LEVELS.map((l) => (
+                        <option key={l} value={l}>{l} Level</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               )}
               <input
                 type="email"
