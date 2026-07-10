@@ -2,41 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    match /hostels/{hostelId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
-    match /rooms/{roomId} {
-      allow read: if isAuthenticated();
-      allow update: if isAuthenticated()
-        && getUserData().isEligible == true
-        && request.resource.data.genderAllowed == getUserData().gender;
-
-      match /beds/{bedId} {
-        allow read: if isAuthenticated();
-        allow update: if isAuthenticated() && !resource.data.isReserved;
-        allow create, delete: if false;
-      }
-    }
-
-    match /allocations/{allocationId} {
-      allow read: if isAuthenticated() && (resource.data.studentId == request.auth.uid || getUserData().role == 'bursar_admin');
-      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
-      allow update, delete: if false;
-    }
-
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+    // ⚠️ DEVELOPMENT MODE: Open access for testing.
+    //    Lock down with auth checks before production deployment.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

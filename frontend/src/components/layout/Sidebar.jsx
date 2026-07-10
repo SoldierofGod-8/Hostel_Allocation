@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, LayoutDashboard, Map, FileText, Wrench, User, LifeBuoy, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Map, FileText, Wrench, User, LifeBuoy, Settings, LogOut } from "lucide-react";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Overview", href: "#" },
@@ -13,9 +13,7 @@ export default function Sidebar({ onLogout, userName }) {
   return (
     <aside className="bg-surface-container h-screen w-sidebar-width fixed left-0 top-0 flex flex-col border-r border-border-neutral z-40">
       <div className="px-6 py-6 border-b border-border-neutral flex items-center gap-4">
-        <div className="w-10 h-10 rounded bg-primary flex items-center justify-center shrink-0 shadow-sm">
-          <Building2 className="h-5 w-5 text-on-primary" />
-        </div>
+        <img src="logo.png" alt="ADUN Logo" className="h-10 w-10 rounded object-contain shrink-0" />
         <div>
           <h1 className="font-headline-md text-headline-md font-bold text-primary truncate leading-tight">ADUN Portal</h1>
           <p className="font-label-sm text-label-sm text-on-surface-variant truncate">Hostel Management System</p>

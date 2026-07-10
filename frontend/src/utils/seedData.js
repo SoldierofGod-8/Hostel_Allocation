@@ -1,19 +1,12 @@
 import { db } from "../firebaseConfig";
 import { doc, setDoc, collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 
-const MALE_HOSTEL = {
-  id: "male_hostel_a",
-  name: "Hall of Justice (Hostel A)",
-  gender: "male"
-};
-
-const FEMALE_HOSTEL = {
-  id: "female_hostel_b",
-  name: "Hall of Grace (Hostel B)",
-  gender: "female"
-};
-
-const ROOM_TYPES = [2, 4];
+const HOSTELS = [
+  { id: "male_hostel_a", name: "Block A (Male)", gender: "male", wings: [{ label: "A1", floors: 2 }, { label: "A2", floors: 1 }] },
+  { id: "male_hostel_b", name: "Block B (Male)", gender: "male", wings: [{ label: "B1", floors: 1 }, { label: "B2", floors: 1 }] },
+  { id: "female_hostel_c", name: "Block C (Female)", gender: "female", wings: [{ label: "C1", floors: 2 }, { label: "C2", floors: 1 }] },
+  { id: "female_hostel_d", name: "Block D (Female)", gender: "female", wings: [{ label: "D1", floors: 1 }, { label: "D2", floors: 1 }] },
+];
 
 function generateRooms(hostelId, gender, wingLabel, floor, roomCount, roomType) {
   const rooms = [];
@@ -34,7 +27,7 @@ function generateRooms(hostelId, gender, wingLabel, floor, roomCount, roomType) 
       occupiedBeds,
       genderAllowed: gender,
       status: occupiedBeds >= roomType ? "full" : "available",
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
   }
   return rooms;
@@ -48,18 +41,17 @@ function generateBeds(roomType) {
       bedLabel: `Bed ${label}`,
       isReserved: false,
       reservedBy: null,
-      reservedAt: null
+      reservedAt: null,
     });
   }
   return beds;
 }
 
 export async function seedHostelData() {
-  const hostels = [MALE_HOSTEL, FEMALE_HOSTEL];
   let totalRooms = 0;
   let totalBeds = 0;
 
-  for (const hostel of hostels) {
+  for (const hostel of HOSTELS) {
     const existingRooms = await getDocs(
       query(collection(db, "rooms"), where("hostelId", "==", hostel.id))
     );
@@ -69,13 +61,9 @@ export async function seedHostelData() {
       continue;
     }
 
-    const wings = hostel.gender === "male"
-      ? [{ label: "A", floors: 3 }, { label: "B", floors: 2 }]
-      : [{ label: "C", floors: 2 }, { label: "D", floors: 2 }];
-
-    for (const wing of wings) {
+    for (const wing of hostel.wings) {
       for (let floor = 1; floor <= wing.floors; floor++) {
-        const roomType = floor <= 2 ? 2 : 4;
+        const roomType = floor <= 1 ? 2 : 4;
         const rooms = generateRooms(hostel.id, hostel.gender, wing.label, floor, 4, roomType);
 
         for (const roomData of rooms) {
@@ -94,23 +82,42 @@ export async function seedHostelData() {
     }
 
     const studentProfiles = [
-      { uid: `stud_sample_${hostel.gender}_1`, name: hostel.gender === "male" ? "Alex Ngozi" : "Grace Okonkwo", gender: hostel.gender, isEligible: true },
-      { uid: `stud_sample_${hostel.gender}_2`, name: hostel.gender === "male" ? "Michael Obi" : "Sarah Adeyemi", gender: hostel.gender, isEligible: true },
-      { uid: `stud_sample_${hostel.gender}_3`, name: hostel.gender === "male" ? "David Olu" : "Esther Nnamdi", gender: hostel.gender, isEligible: false },
+      {
+        uid: `stud_sample_${hostel.gender}_1`,
+        name: hostel.gender === "male" ? "Alex Ngozi" : "Grace Okonkwo",
+        gender: hostel.gender,
+        isEligible: true,
+      },
+      {
+        uid: `stud_sample_${hostel.gender}_2`,
+        name: hostel.gender === "male" ? "Michael Obi" : "Sarah Adeyemi",
+        gender: hostel.gender,
+        isEligible: true,
+      },
+      {
+        uid: `stud_sample_${hostel.gender}_3`,
+        name: hostel.gender === "male" ? "David Olu" : "Esther Nnamdi",
+        gender: hostel.gender,
+        isEligible: false,
+      },
     ];
 
     for (const profile of studentProfiles) {
       const userRef = doc(db, "users", profile.uid);
-      await setDoc(userRef, {
-        uid: profile.uid,
-        name: profile.name,
-        email: `${profile.name.toLowerCase().replace(/\s+/g, ".")}@university.edu`,
-        role: "student",
-        gender: profile.gender,
-        academicLevel: Math.floor(Math.random() * 4 + 1) * 100,
-        isEligible: profile.isEligible,
-        currentAllocationId: null
-      }, { merge: true });
+      await setDoc(
+        userRef,
+        {
+          uid: profile.uid,
+          name: profile.name,
+          email: `${profile.name.toLowerCase().replace(/\s+/g, ".")}@university.edu`,
+          role: "student",
+          gender: profile.gender,
+          academicLevel: Math.floor(Math.random() * 4 + 1) * 100,
+          isEligible: profile.isEligible,
+          currentAllocationId: null,
+        },
+        { merge: true }
+      );
     }
   }
 

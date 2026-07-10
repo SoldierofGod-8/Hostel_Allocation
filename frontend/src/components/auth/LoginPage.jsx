@@ -113,6 +113,7 @@ export default function LoginPage({ onLogin }) {
       <div className="absolute inset-0 z-0 opacity-[0.03] bg-primary pointer-events-none" />
       <div className="relative z-10 flex flex-col h-full min-h-screen w-full max-w-container-max mx-auto px-base md:px-gutter">
         <header className="flex flex-col items-center justify-center py-8 md:py-12 shrink-0">
+          <img src="logo.png" alt="ADUN Logo" className="h-16 w-16 object-contain mb-4" />
           <h1 className="font-display-lg text-display-lg text-primary text-center mb-2">
             Admiralty University of Nigeria
           </h1>

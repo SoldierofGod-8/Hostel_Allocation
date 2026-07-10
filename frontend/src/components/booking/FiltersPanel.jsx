@@ -1,15 +1,28 @@
 import React from "react";
 import { Filter } from "lucide-react";
 
+const HOSTELS = {
+  male: [
+    { value: "male_hostel_a", label: "Block A (Male)" },
+    { value: "male_hostel_b", label: "Block B (Male)" },
+  ],
+  female: [
+    { value: "female_hostel_c", label: "Block C (Female)" },
+    { value: "female_hostel_d", label: "Block D (Female)" },
+  ],
+};
+
 export default function FiltersPanel({
   filterHostel,
   setFilterHostel,
   filterType,
   setFilterType,
   rooms,
+  gender,
 }) {
   const freeRooms = rooms.filter((r) => r.occupiedBeds < r.totalBeds).length;
   const fullRooms = rooms.filter((r) => r.occupiedBeds >= r.totalBeds).length;
+  const hostels = HOSTELS[gender] || HOSTELS.male;
 
   return (
     <aside className="w-full lg:w-64 shrink-0 bg-surface border border-border-neutral rounded p-5 flex flex-col gap-5 sticky top-0">
@@ -27,10 +40,9 @@ export default function FiltersPanel({
           onChange={(e) => setFilterHostel(e.target.value)}
           className="w-full bg-surface border border-border-neutral rounded p-2 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
         >
-          <option value="male_hostel_a">Block A (Male)</option>
-          <option value="male_hostel_b">Block B (Male)</option>
-          <option value="female_hostel_c">Block C (Female)</option>
-          <option value="female_hostel_d">Block D (Female)</option>
+          {hostels.map((h) => (
+            <option key={h.value} value={h.value}>{h.label}</option>
+          ))}
         </select>
       </div>
 

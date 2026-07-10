@@ -111,6 +111,7 @@ export default function BookingDashboard({ user }) {
           filterType={filterType}
           setFilterType={(v) => { setFilterType(v); setSelectedRoom(null); }}
           rooms={rooms}
+          gender={student?.gender}
         />
         <RoomGrid
           rooms={rooms}
