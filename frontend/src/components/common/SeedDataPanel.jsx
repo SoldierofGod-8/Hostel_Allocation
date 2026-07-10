@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Database, CheckCircle } from "lucide-react";
+import { seedHostelData } from "../../utils/seedData";
 
 export default function SeedDataPanel() {
   const [status, setStatus] = useState("");
@@ -9,11 +10,10 @@ export default function SeedDataPanel() {
     setSeeding(true);
     setStatus("Seeding database...");
     try {
-      const { seedHostelData } = await import("../../utils/seedData");
       const result = await seedHostelData();
       setStatus(`${result.totalRooms} rooms and ${result.totalBeds} beds created across all blocks. Demo user profiles synced.`);
     } catch (err) {
-      setStatus(`Error: ${err.message}. Check Firestore rules in firestore.rules.`);
+      setStatus(`Error: ${err.message}`);
     } finally {
       setSeeding(false);
     }
