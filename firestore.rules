@@ -1,37 +1,42 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow authenticated users to read and write their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Hostels collection - authenticated users can read, admins can write
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     match /hostels/{hostelId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
 
-    // Rooms within hostels
-    match /hostels/{hostelId}/rooms/{roomId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated()
+        && getUserData().isEligible == true
+        && request.resource.data.genderAllowed == getUserData().gender;
+
+      match /beds/{bedId} {
+        allow read: if isAuthenticated();
+        allow update: if isAuthenticated() && !resource.data.isReserved;
+        allow create, delete: if false;
+      }
     }
 
-    // Allocations
     match /allocations/{allocationId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAuthenticated() && (resource.data.studentId == request.auth.uid || getUserData().role == 'bursar_admin');
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if false;
     }
 
-    // Applications/Requests
-    match /applications/{applicationId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
     }
   }
 }
