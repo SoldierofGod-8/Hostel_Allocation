@@ -111,7 +111,7 @@ export default function LoginPage({ onLogin }) {
           className="w-full h-12 bg-primary text-on-primary font-title-md text-title-md rounded hover:bg-primary-container transition-colors flex items-center justify-center gap-2"
         >
           <LogIn className="h-5 w-5" />
-          Login as {title}
+          Login into {title}
         </button>
       </form>
     </div>
