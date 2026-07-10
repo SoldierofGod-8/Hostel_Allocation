@@ -4,4 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/Hostel_Allocation/',
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 1000,
+  },
 })

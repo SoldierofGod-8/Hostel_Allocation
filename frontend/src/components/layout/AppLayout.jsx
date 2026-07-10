@@ -20,7 +20,7 @@ export default function AppLayout({ student, onLogout }) {
       case "Dashboard":
         return <DashboardHome user={student} onNavigate={setActiveTab} />;
       case "Room Selection":
-        return <BookingDashboard user={student} />;
+        return <BookingDashboard user={student} onNavigate={setActiveTab} />;
       case "My Booking":
         return <MyBooking user={student} onNavigate={setActiveTab} />;
       case "Payments":

@@ -10,6 +10,10 @@ import {
   getDocs,
 } from "firebase/firestore";
 
+const MAX_ATTEMPTS = 3;
+const WINDOW_HOURS = 24;
+const LOCK_MINUTES = 5;
+
 export function subscribeToUser(uid, onData) {
   return onSnapshot(doc(db, "users", uid), (snap) => {
     if (snap.exists()) onData(snap.data());
@@ -40,6 +44,27 @@ export async function fetchBeds(roomId) {
   return beds;
 }
 
+export function isAbuseBlocked(userData) {
+  if (!userData?.abuseBlockUntil) return false;
+  const blockExpiry = userData.abuseBlockUntil.toDate?.() || new Date(userData.abuseBlockUntil);
+  return blockExpiry > new Date();
+}
+
+export function getAbuseBlockTimeRemaining(userData) {
+  if (!isAbuseBlocked(userData)) return null;
+  const blockExpiry = userData.abuseBlockUntil.toDate?.() || new Date(userData.abuseBlockUntil);
+  return Math.max(0, Math.floor((blockExpiry - new Date()) / 1000 / 60));
+}
+
+export function getRecentAttemptCount(userData) {
+  if (!userData?.reservationAttempts) return 0;
+  const cutoff = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000);
+  return userData.reservationAttempts.filter((ts) => {
+    const d = ts.toDate?.() || new Date(ts);
+    return d > cutoff;
+  }).length;
+}
+
 export async function reserveBed({ student, selectedRoom, bedId, hostelId }) {
   const roomRef = doc(db, "rooms", selectedRoom.id);
   const bedRef = doc(db, `rooms/${selectedRoom.id}/beds`, bedId);
@@ -65,6 +90,21 @@ export async function reserveBed({ student, selectedRoom, bedId, hostelId }) {
     if (userData.currentAllocationId) {
       throw new Error("You already have an active reservation.");
     }
+
+    if (isAbuseBlocked(userData)) {
+      const remaining = getAbuseBlockTimeRemaining(userData);
+      throw new Error(`Too many reservation attempts. Room selection blocked for ${remaining} more minutes.`);
+    }
+
+    const recentAttempts = getRecentAttemptCount(userData);
+    if (recentAttempts >= MAX_ATTEMPTS) {
+      const blockUntil = new Date(Date.now() + WINDOW_HOURS * 60 * 60 * 1000);
+      transaction.update(userRef, {
+        abuseBlockUntil: Timestamp.fromDate(blockUntil),
+      });
+      throw new Error(`You have exceeded ${MAX_ATTEMPTS} reservation attempts in ${WINDOW_HOURS} hours. Room selection is blocked for 24 hours.`);
+    }
+
     if (bedData.isReserved) {
       throw new Error("This bed was just claimed by another student.");
     }
@@ -73,7 +113,7 @@ export async function reserveBed({ student, selectedRoom, bedId, hostelId }) {
     }
 
     const now = new Date();
-    const expiryTime = new Date(now.getTime() + 5 * 60 * 1000);
+    const expiryTime = new Date(now.getTime() + LOCK_MINUTES * 60 * 1000);
 
     transaction.update(bedRef, {
       isReserved: true,
@@ -98,10 +138,14 @@ export async function reserveBed({ student, selectedRoom, bedId, hostelId }) {
       reservedUntil: Timestamp.fromDate(expiryTime),
     });
 
+    const attempts = userData.reservationAttempts || [];
+    attempts.push(Timestamp.fromDate(now));
+
     transaction.update(userRef, {
       currentAllocationId: allocationRef.id,
+      reservationAttempts: attempts,
     });
   });
 
-  return "Reservation locked for 5 minutes. Complete payment to confirm.";
+  return `Reservation locked for ${LOCK_MINUTES} minutes. Complete payment to confirm.`;
 }

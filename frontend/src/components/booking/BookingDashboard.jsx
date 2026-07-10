@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, AlertTriangle, Star, ShieldCheck } from "lucide-react";
+import { CheckCircle, AlertTriangle, Star, ShieldCheck, Clock } from "lucide-react";
 import ProgressStepper from "./ProgressStepper";
 import FiltersPanel from "./FiltersPanel";
 import RoomGrid from "./RoomGrid";
 import RoomDetails from "./RoomDetails";
-import { subscribeToUser, subscribeToRooms, fetchBeds, reserveBed } from "../../services/firestore";
+import {
+  subscribeToUser,
+  subscribeToRooms,
+  fetchBeds,
+  reserveBed,
+  isAbuseBlocked,
+  getAbuseBlockTimeRemaining,
+  getRecentAttemptCount,
+} from "../../services/firestore";
 
-export default function BookingDashboard({ user }) {
+export default function BookingDashboard({ user, onNavigate }) {
   const [student, setStudent] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -54,6 +62,7 @@ export default function BookingDashboard({ user }) {
       const msg = await reserveBed({ student, selectedRoom, bedId, hostelId: filterHostel });
       setBookingStatus(msg);
       setSelectedRoom(null);
+      if (onNavigate) onNavigate("Payments");
     } catch (err) {
       setBookingStatus(`Error: ${err.message}`);
     } finally {
@@ -62,6 +71,9 @@ export default function BookingDashboard({ user }) {
   };
 
   const freeRooms = rooms.filter((r) => r.occupiedBeds < r.totalBeds).length;
+  const blocked = isAbuseBlocked(student);
+  const blockMinutes = getAbuseBlockTimeRemaining(student);
+  const recentAttempts = getRecentAttemptCount(student);
 
   return (
     <>
@@ -74,7 +86,7 @@ export default function BookingDashboard({ user }) {
 
       <ProgressStepper currentStep={2} />
 
-      {student?.academicLevel === 400 && student?.isEligible && (
+      {student?.academicLevel === 400 && student?.isEligible && !blocked && (
         <div className="bg-secondary-container/20 border border-secondary-container/50 rounded p-4 flex items-center gap-3">
           <Star className="h-5 w-5 text-secondary shrink-0 fill-current" />
           <div>
@@ -86,13 +98,41 @@ export default function BookingDashboard({ user }) {
         </div>
       )}
 
-      {student?.academicLevel && student.academicLevel < 400 && student?.isEligible && (
+      {student?.academicLevel && student.academicLevel < 400 && student?.isEligible && !blocked && (
         <div className="bg-primary-fixed/20 border border-primary/20 rounded p-4 flex items-center gap-3">
           <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
           <div>
             <p className="font-title-md text-title-md text-primary">Standard Access</p>
             <p className="font-body-md text-body-md text-on-surface-variant">
               400-level students have early access priority. Rooms marked with a star are reserved for final-year students during the priority window.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {blocked && (
+        <div className="bg-error-container border border-error-red/30 rounded p-4 flex items-center gap-3">
+          <Clock className="h-5 w-5 text-error-red shrink-0" />
+          <div>
+            <p className="font-title-md text-title-md text-on-error-container font-medium">
+              Room Selection Blocked
+            </p>
+            <p className="font-body-md text-body-md text-on-error-container">
+              You have exceeded the maximum of 3 reservation attempts in 24 hours without completing payment.
+              Room selection is blocked for <strong>{blockMinutes} more minutes</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!blocked && recentAttempts >= 2 && (
+        <div className="bg-warning-amber/10 border border-warning-amber/30 rounded p-4 flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-warning-amber shrink-0" />
+          <div>
+            <p className="font-title-md text-title-md text-on-surface">Reservation Warning</p>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              You have used {recentAttempts} of 3 allowed reservation attempts in the last 24 hours.
+              Complete payment after reserving to avoid being blocked.
             </p>
           </div>
         </div>
@@ -116,27 +156,38 @@ export default function BookingDashboard({ user }) {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start h-full pb-8">
-        <FiltersPanel
-          filterHostel={filterHostel}
-          setFilterHostel={(v) => { setFilterHostel(v); setSelectedRoom(null); }}
-          filterType={filterType}
-          setFilterType={(v) => { setFilterType(v); setSelectedRoom(null); }}
-          rooms={rooms}
-          gender={student?.gender}
-        />
-        <RoomGrid
-          rooms={rooms}
-          selectedRoom={selectedRoom}
-          onSelectRoom={handleSelectRoom}
-        />
-        <RoomDetails
-          selectedRoom={selectedRoom}
-          beds={beds}
-          loading={loading}
-          onReserveBed={handleReserveBed}
-        />
-      </div>
+      {blocked ? (
+        <div className="bg-surface border border-border-neutral rounded p-12 text-center">
+          <Clock className="h-16 w-16 mx-auto text-error-red/40 mb-4" />
+          <h3 className="font-title-md text-title-md text-on-surface mb-2">Access Restricted</h3>
+          <p className="font-body-md text-body-md text-on-surface-variant mb-6 max-w-md mx-auto">
+            You cannot view or reserve rooms while your account is blocked.
+            Please wait {blockMinutes} minutes or contact support.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6 items-start h-full pb-8">
+          <FiltersPanel
+            filterHostel={filterHostel}
+            setFilterHostel={(v) => { setFilterHostel(v); setSelectedRoom(null); }}
+            filterType={filterType}
+            setFilterType={(v) => { setFilterType(v); setSelectedRoom(null); }}
+            rooms={rooms}
+            gender={student?.gender}
+          />
+          <RoomGrid
+            rooms={rooms}
+            selectedRoom={selectedRoom}
+            onSelectRoom={handleSelectRoom}
+          />
+          <RoomDetails
+            selectedRoom={selectedRoom}
+            beds={beds}
+            loading={loading}
+            onReserveBed={handleReserveBed}
+          />
+        </div>
+      )}
 
       {bookingStatus && (
         <div
@@ -159,5 +210,3 @@ export default function BookingDashboard({ user }) {
     </>
   );
 }
-
-
