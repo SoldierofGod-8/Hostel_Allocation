@@ -16,7 +16,7 @@ exports.allocateRoom = onCall(async (request) => {
   const { hostelId, roomId } = request.data;
   const userId = request.auth.uid;
 
-  const roomRef = db.collection("hostels").doc(hostelId).collection("rooms").doc(roomId);
+  const roomRef = db.collection("rooms").doc(roomId);
   const roomDoc = await roomRef.get();
 
   if (!roomDoc.exists) {
@@ -24,7 +24,7 @@ exports.allocateRoom = onCall(async (request) => {
   }
 
   const roomData = roomDoc.data();
-  if (roomData.occupied >= roomData.capacity) {
+  if (roomData.occupiedBeds >= roomData.totalBeds) {
     throw new HttpsError("failed-precondition", "Room is full.");
   }
 
@@ -46,7 +46,7 @@ exports.allocateRoom = onCall(async (request) => {
   });
 
   await roomRef.update({
-    occupied: roomData.occupied + 1,
+    occupiedBeds: roomData.occupiedBeds + 1,
   });
 
   return { success: true, message: "Room allocated successfully." };
