@@ -1,18 +1,22 @@
 import React, { useState } from "react";
-import HostelBooking from "./components/HostelBooking";
-import Login from "./components/Login";
+import LoginPage from "./components/auth/LoginPage";
+import AppLayout from "./components/layout/AppLayout";
+import BookingDashboard from "./components/booking/BookingDashboard";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
 
   if (!currentUser) {
-    return <Login onLogin={setCurrentUser} />;
+    return <LoginPage onLogin={setCurrentUser} />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <HostelBooking user={currentUser} onLogout={() => setCurrentUser(null)} />
-    </div>
+    <AppLayout
+      student={currentUser}
+      onLogout={() => setCurrentUser(null)}
+    >
+      <BookingDashboard user={currentUser} />
+    </AppLayout>
   );
 }
 
