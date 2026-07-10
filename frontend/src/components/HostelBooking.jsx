@@ -10,28 +10,35 @@ import {
   Timestamp,
   getDocs
 } from "firebase/firestore";
-import { sampleStudent, seedMockStudent } from "../mockAuth";
-import { Building2, CheckCircle2, AlertTriangle, ShieldCheck, HelpCircle, Lock } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebaseConfig";
+import {
+  Building2, CheckCircle2, AlertTriangle, ShieldCheck,
+  HelpCircle, Lock, LogOut, Database
+} from "lucide-react";
 
-export default function HostelBooking() {
+export default function HostelBooking({ user, onLogout }) {
   const [student, setStudent] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [beds, setBeds] = useState([]);
-  const [filterHostel, setFilterHostel] = useState("male_hostel_a");
+  const [filterHostel, setFilterHostel] = useState(
+    user?.gender === "female" ? "female_hostel_b" : "male_hostel_a"
+  );
   const [filterType, setFilterType] = useState("all");
   const [bookingStatus, setBookingStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSeedPanel, setShowSeedPanel] = useState(false);
 
   useEffect(() => {
-    seedMockStudent();
-    const unsubUser = onSnapshot(doc(db, "users", sampleStudent.uid), (docSnap) => {
+    if (!user) return;
+    const unsubUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
       if (docSnap.exists()) {
         setStudent(docSnap.data());
       }
     });
     return () => unsubUser();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!student) return;
@@ -153,6 +160,16 @@ export default function HostelBooking() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (_) {}
+    onLogout();
+  };
+
+  const freeRooms = rooms.filter(r => r.occupiedBeds < r.totalBeds).length;
+  const fullRooms = rooms.filter(r => r.occupiedBeds >= r.totalBeds).length;
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 font-sans">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between border-b border-slate-800 pb-6 mb-8 gap-4">
@@ -164,33 +181,57 @@ export default function HostelBooking() {
           <p className="text-slate-400 mt-1">Real-time seat selection & instant reservation lock</p>
         </div>
 
-        {student && (
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 shadow-xl">
-            <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/20">
-              {student.name.charAt(0)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-white">{student.name}</span>
-                <span className="px-2 py-0.5 text-xs rounded bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">
-                  Lvl {student.academicLevel}
-                </span>
+        <div className="flex items-center gap-3">
+          {student && (
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-4 shadow-xl">
+              <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/20">
+                {student.name.charAt(0)}
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                {student.isEligible ? (
-                  <span className="text-emerald-400 flex items-center gap-0.5">
-                    <ShieldCheck className="h-3 w-3" /> Eligible for Allocation
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-white">{student.name}</span>
+                  <span className="px-2 py-0.5 text-xs rounded bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">
+                    Lvl {student.academicLevel}
                   </span>
-                ) : (
-                  <span className="text-rose-400 flex items-center gap-0.5">
-                    <AlertTriangle className="h-3 w-3" /> Unpaid Fees Blocked
-                  </span>
-                )}
-              </p>
+                </div>
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                  {student.isEligible ? (
+                    <span className="text-emerald-400 flex items-center gap-0.5">
+                      <ShieldCheck className="h-3 w-3" /> Eligible for Allocation
+                    </span>
+                  ) : (
+                    <span className="text-rose-400 flex items-center gap-0.5">
+                      <AlertTriangle className="h-3 w-3" /> Unpaid Fees Blocked
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          <button
+            onClick={() => setShowSeedPanel(!showSeedPanel)}
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl p-3 text-slate-400 hover:text-white transition"
+            title="Seed Data Panel"
+          >
+            <Database className="h-5 w-5" />
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl p-3 text-slate-400 hover:text-rose-400 transition"
+            title="Sign Out"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
+        </div>
       </div>
+
+      {showSeedPanel && (
+        <div className="max-w-7xl mx-auto mb-6">
+          <SeedDataPanel onClose={() => setShowSeedPanel(false)} />
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -237,43 +278,61 @@ export default function HostelBooking() {
             </div>
           </div>
 
-          <div className="bg-slate-800/30 border border-slate-800 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              Rooms Layout Grid
-              <span className="text-xs font-normal text-slate-400">({rooms.length} matches found)</span>
-            </h2>
-
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              {rooms.map((room) => {
-                const isFull = room.occupiedBeds >= room.totalBeds;
-                const isPartial = room.occupiedBeds > 0 && !isFull;
-
-                let cardColor = "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-300";
-                if (isFull) {
-                  cardColor = "bg-rose-500/10 border-rose-500/20 text-rose-400 cursor-not-allowed opacity-50";
-                } else if (isPartial) {
-                  cardColor = "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300";
-                }
-
-                return (
-                  <button
-                    key={room.id}
-                    disabled={isFull}
-                    onClick={() => handleSelectRoom(room)}
-                    className={`border rounded-xl p-3 text-center transition-all flex flex-col justify-between items-center ${cardColor} ${
-                      selectedRoom?.id === room.id ? "ring-2 ring-indigo-500 scale-95" : ""
-                    }`}
-                  >
-                    <span className="text-xs font-semibold text-slate-400 mb-1">Rm</span>
-                    <span className="text-lg font-black tracking-tight">{room.roomNumber}</span>
-                    <span className="text-[10px] mt-1 font-medium bg-black/20 px-1.5 py-0.5 rounded">
-                      {room.occupiedBeds}/{room.totalBeds}
-                    </span>
-                  </button>
-                );
-              })}
+          {rooms.length === 0 ? (
+            <div className="bg-slate-800/30 border border-slate-800 rounded-2xl p-12 text-center">
+              <Database className="h-16 w-16 mx-auto text-slate-600 mb-4" />
+              <p className="text-slate-400 font-medium text-lg mb-2">No rooms found</p>
+              <p className="text-slate-500 text-sm max-w-md mx-auto">
+                No rooms are available for this selection. Click the <Database className="h-3 w-3 inline" /> database icon above to seed sample room data, or ask your administrator to populate the database.
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  Rooms Layout Grid
+                  <span className="text-xs font-normal text-slate-400">({rooms.length} rooms)</span>
+                </h2>
+                <div className="flex gap-4 text-xs text-slate-400">
+                  <span className="text-emerald-400 font-medium">{freeRooms} free</span>
+                  <span className="text-rose-400 font-medium">{fullRooms} full</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-800/30 border border-slate-800 rounded-2xl p-6">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {rooms.map((room) => {
+                    const isFull = room.occupiedBeds >= room.totalBeds;
+                    const isPartial = room.occupiedBeds > 0 && !isFull;
+
+                    let cardColor = "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-300";
+                    if (isFull) {
+                      cardColor = "bg-rose-500/10 border-rose-500/20 text-rose-400 cursor-not-allowed opacity-50";
+                    } else if (isPartial) {
+                      cardColor = "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300";
+                    }
+
+                    return (
+                      <button
+                        key={room.id}
+                        disabled={isFull}
+                        onClick={() => handleSelectRoom(room)}
+                        className={`border rounded-xl p-3 text-center transition-all flex flex-col justify-between items-center ${cardColor} ${
+                          selectedRoom?.id === room.id ? "ring-2 ring-indigo-500 scale-95" : ""
+                        }`}
+                      >
+                        <span className="text-xs font-semibold text-slate-400 mb-1">Rm</span>
+                        <span className="text-lg font-black tracking-tight">{room.roomNumber}</span>
+                        <span className="text-[10px] mt-1 font-medium bg-black/20 px-1.5 py-0.5 rounded">
+                          {room.occupiedBeds}/{room.totalBeds}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -330,7 +389,7 @@ export default function HostelBooking() {
             ) : (
               <div className="text-center py-12 text-slate-500">
                 <HelpCircle className="h-12 w-12 mx-auto text-slate-600 mb-3 stroke-[1.5]" />
-                <p className="text-sm font-medium">Please click any available Room card on the grid layout map to load its bed configuration panel.</p>
+                <p className="text-sm font-medium">Click any available Room card on the grid layout map to load its bed configuration panel.</p>
               </div>
             )}
           </div>
@@ -352,6 +411,60 @@ export default function HostelBooking() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function SeedDataPanel({ onClose }) {
+  const [status, setStatus] = useState("");
+  const [seeding, setSeeding] = useState(false);
+
+  const seedAllData = async () => {
+    setSeeding(true);
+    setStatus("Seeding database...");
+
+    try {
+      const { seedHostelData } = await import("../utils/seedData");
+      await seedHostelData();
+      setStatus("Sample data created! Rooms, beds, and student profiles are ready.");
+    } catch (err) {
+      setStatus(`Error: ${err.message}`);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  return (
+    <div className="bg-indigo-950/40 border border-indigo-800/50 rounded-2xl p-6 shadow-2xl">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <Database className="h-5 w-5 text-indigo-400" />
+          Database Seed Panel
+        </h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-white text-sm font-medium">
+          Close
+        </button>
+      </div>
+      <p className="text-sm text-slate-400 mb-4">
+        This will populate Firestore with sample rooms, beds, hostel wings, and student profiles for both Male and Female hostels.
+        Existing data will not be overwritten.
+      </p>
+      <button
+        onClick={seedAllData}
+        disabled={seeding}
+        className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white font-bold rounded-xl px-6 py-3 text-sm transition flex items-center gap-2"
+      >
+        {seeding ? (
+          <><span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Seeding...</>
+        ) : (
+          <><Database className="h-4 w-4" /> Seed Sample Data</>
+        )}
+      </button>
+      {status && (
+        <div className={`mt-4 text-sm font-medium ${status.startsWith("Error") ? "text-rose-400" : "text-emerald-400"}`}>
+          {status}
+        </div>
+      )}
     </div>
   );
 }
