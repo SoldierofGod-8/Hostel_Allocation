@@ -8,11 +8,14 @@ import Payments from "../booking/Payments";
 import HostelMap from "../dashboard/HostelMap";
 import Maintenance from "../dashboard/Maintenance";
 import Profile from "../dashboard/Profile";
+import SeedDataPanel from "../common/SeedDataPanel";
 
 export default function AppLayout({ student, onLogout }) {
   const [activeTab, setActiveTab] = useState("Room Selection");
+  const [showSeed, setShowSeed] = useState(false);
 
   const renderPage = () => {
+    if (showSeed) return <SeedDataPanel />;
     switch (activeTab) {
       case "Dashboard":
         return <DashboardHome user={student} onNavigate={setActiveTab} />;
@@ -37,8 +40,9 @@ export default function AppLayout({ student, onLogout }) {
     <div className="min-h-screen bg-background text-on-surface font-body-md antialiased">
       <Sidebar
         onLogout={onLogout}
-        activeTab={activeTab}
-        onNavigate={setActiveTab}
+        activeTab={showSeed ? null : activeTab}
+        onNavigate={(tab) => { setShowSeed(false); setActiveTab(tab); }}
+        onSeedToggle={() => setShowSeed((v) => !v)}
       />
       <main className="ml-sidebar-width flex-1 flex flex-col h-full min-h-screen">
         <TopBar student={student} activeTab={activeTab} onTabChange={setActiveTab} />

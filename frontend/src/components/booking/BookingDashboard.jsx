@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Database, CheckCircle, AlertTriangle, Star, ShieldCheck } from "lucide-react";
+import { CheckCircle, AlertTriangle, Star, ShieldCheck } from "lucide-react";
 import ProgressStepper from "./ProgressStepper";
 import FiltersPanel from "./FiltersPanel";
 import RoomGrid from "./RoomGrid";
@@ -17,7 +17,6 @@ export default function BookingDashboard({ user }) {
   const [filterType, setFilterType] = useState("all");
   const [bookingStatus, setBookingStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showSeedPanel, setShowSeedPanel] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -66,25 +65,14 @@ export default function BookingDashboard({ user }) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-primary">Select Your Room</h2>
-          <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">
-            Browse available blocks and select a bed space to continue your application.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowSeedPanel(!showSeedPanel)}
-          className="flex items-center gap-2 px-4 py-2 bg-surface border border-border-neutral rounded font-body-md text-body-md text-on-surface-variant hover:text-primary hover:border-primary transition-colors"
-        >
-          <Database className="h-4 w-4" />
-          {showSeedPanel ? "Close" : "Seed Data"}
-        </button>
+      <div>
+        <h2 className="font-headline-lg text-headline-lg text-primary">Select Your Room</h2>
+        <p className="font-body-lg text-body-lg text-on-surface-variant mt-1">
+          Browse available blocks and select a bed space to continue your application.
+        </p>
       </div>
 
       <ProgressStepper currentStep={2} />
-
-      {showSeedPanel && <SeedDataPanel onClose={() => setShowSeedPanel(false)} />}
 
       {student?.academicLevel === 400 && student?.isEligible && (
         <div className="bg-secondary-container/20 border border-secondary-container/50 rounded p-4 flex items-center gap-3">
@@ -172,56 +160,4 @@ export default function BookingDashboard({ user }) {
   );
 }
 
-function SeedDataPanel({ onClose }) {
-  const [status, setStatus] = useState("");
-  const [seeding, setSeeding] = useState(false);
 
-  const seedAllData = async () => {
-    setSeeding(true);
-    setStatus("Seeding database...");
-    try {
-      const { seedHostelData } = await import("../../utils/seedData");
-      await seedHostelData();
-      setStatus("Sample data created! Rooms, beds, and profiles are ready.");
-    } catch (err) {
-      setStatus(`Error: ${err.message}`);
-    } finally {
-      setSeeding(false);
-    }
-  };
-
-  return (
-    <div className="bg-primary-fixed/20 border border-primary/20 rounded p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-title-md text-title-md text-primary flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          Database Seed Panel
-        </h3>
-        <button onClick={onClose} className="text-on-surface-variant hover:text-primary text-sm font-medium">
-          Close
-        </button>
-      </div>
-      <p className="font-body-md text-body-md text-on-surface-variant mb-4">
-        Populate Firestore with sample rooms, beds, and student profiles for both Male and Female hostels.
-      </p>
-      <button
-        onClick={seedAllData}
-        disabled={seeding}
-        className="bg-primary text-on-primary font-title-md text-title-md rounded px-6 py-3 hover:bg-primary-container transition-colors flex items-center gap-2 disabled:opacity-50"
-      >
-        {seeding ? (
-          <><span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Seeding...</>
-        ) : (
-          <><Database className="h-4 w-4" /> Seed Sample Data</>
-        )}
-      </button>
-      {status && (
-        <p className={`mt-4 font-body-md text-body-md font-medium ${
-          status.startsWith("Error") ? "text-error-red" : "text-success-green"
-        }`}>
-          {status}
-        </p>
-      )}
-    </div>
-  );
-}

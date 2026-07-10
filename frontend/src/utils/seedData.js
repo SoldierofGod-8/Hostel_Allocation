@@ -8,6 +8,31 @@ const HOSTELS = [
   { id: "female_hostel_d", name: "Block D (Female)", gender: "female", wings: [{ label: "D1", floors: 1 }, { label: "D2", floors: 1 }] },
 ];
 
+const DEMO_USERS = [
+  {
+    uid: "stud_alex_99",
+    name: "Alex Ngozi",
+    email: "alex.n@university.edu",
+    matric: "ADUN/2022/1234",
+    role: "student",
+    gender: "male",
+    academicLevel: 400,
+    isEligible: true,
+    currentAllocationId: null,
+  },
+  {
+    uid: "stud_grace_88",
+    name: "Grace Okonkwo",
+    email: "grace.o@university.edu",
+    matric: "ADUN/2023/5678",
+    role: "student",
+    gender: "female",
+    academicLevel: 300,
+    isEligible: true,
+    currentAllocationId: null,
+  },
+];
+
 function generateRooms(hostelId, gender, wingLabel, floor, roomCount, roomType) {
   const rooms = [];
   const startNum = floor * 100 + 1;
@@ -80,45 +105,12 @@ export async function seedHostelData() {
         }
       }
     }
+  }
 
-    const studentProfiles = [
-      {
-        uid: `stud_sample_${hostel.gender}_1`,
-        name: hostel.gender === "male" ? "Alex Ngozi" : "Grace Okonkwo",
-        gender: hostel.gender,
-        isEligible: true,
-      },
-      {
-        uid: `stud_sample_${hostel.gender}_2`,
-        name: hostel.gender === "male" ? "Michael Obi" : "Sarah Adeyemi",
-        gender: hostel.gender,
-        isEligible: true,
-      },
-      {
-        uid: `stud_sample_${hostel.gender}_3`,
-        name: hostel.gender === "male" ? "David Olu" : "Esther Nnamdi",
-        gender: hostel.gender,
-        isEligible: false,
-      },
-    ];
-
-    for (const profile of studentProfiles) {
-      const userRef = doc(db, "users", profile.uid);
-      await setDoc(
-        userRef,
-        {
-          uid: profile.uid,
-          name: profile.name,
-          email: `${profile.name.toLowerCase().replace(/\s+/g, ".")}@university.edu`,
-          role: "student",
-          gender: profile.gender,
-          academicLevel: Math.floor(Math.random() * 4 + 1) * 100,
-          isEligible: profile.isEligible,
-          currentAllocationId: null,
-        },
-        { merge: true }
-      );
-    }
+  for (const profile of DEMO_USERS) {
+    const userRef = doc(db, "users", profile.uid);
+    await setDoc(userRef, profile, { merge: true });
+    console.log(`Demo user ${profile.name} synced.`);
   }
 
   console.log(`Seeding complete: ${totalRooms} rooms, ${totalBeds} beds created.`);

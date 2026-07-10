@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, Map, FileText, Wrench, User, LifeBuoy, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Map, FileText, Wrench, User, Database, LifeBuoy, Settings, LogOut } from "lucide-react";
 
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Overview", tab: "Dashboard" },
@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { icon: User, label: "Profile", tab: "Profile" },
 ];
 
-export default function Sidebar({ onLogout, activeTab, onNavigate }) {
+export default function Sidebar({ onLogout, activeTab, onNavigate, onSeedToggle }) {
   return (
     <aside className="bg-surface-container h-screen w-sidebar-width fixed left-0 top-0 flex flex-col border-r border-border-neutral z-40">
       <div className="px-6 py-6 border-b border-border-neutral flex items-center gap-4">
@@ -34,7 +34,7 @@ export default function Sidebar({ onLogout, activeTab, onNavigate }) {
                   : "text-on-surface-variant hover:bg-surface-container-high"
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? "" : ""}`} />
+              <Icon className="h-5 w-5" />
               <span className="font-title-md text-title-md">{item.label}</span>
             </button>
           );
@@ -42,9 +42,12 @@ export default function Sidebar({ onLogout, activeTab, onNavigate }) {
       </nav>
 
       <div className="p-4 border-t border-border-neutral">
-        <button className="w-full flex items-center justify-center gap-2 py-3 bg-secondary-container text-on-secondary-container rounded font-title-md text-title-md hover:opacity-90 transition-opacity">
-          <LifeBuoy className="h-5 w-5" />
-          Help Desk
+        <button
+          onClick={onSeedToggle}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-on-primary rounded font-title-md text-title-md hover:bg-primary-container transition-colors"
+        >
+          <Database className="h-5 w-5" />
+          Seed Data
         </button>
         <div className="mt-4 flex flex-col gap-1">
           <button className="flex items-center px-2 py-2 gap-3 text-on-surface-variant hover:bg-surface-container-high rounded transition-all font-body-md text-body-md w-full text-left">
